@@ -150,7 +150,7 @@ func getClient(ctx *cli.Context, host string) (*minio.Client, error) {
 	switch strings.ToUpper(ctx.String("signature")) {
 	case "S3V4":
 		// if Signature version '4' use NewV4 directly.
-		creds = credentials.NewStaticV4(ctx.String("access-key"), ctx.String("secret-key"), "")
+		creds = credentials.NewStaticV4(ctx.String("access-key"), ctx.String("secret-key"), ctx.String("session-token"))
 	case "S3V2":
 		// if Signature version '2' use NewV2 directly.
 		creds = credentials.NewStaticV2(ctx.String("access-key"), ctx.String("secret-key"), "")
@@ -179,6 +179,8 @@ func getClient(ctx *cli.Context, host string) (*minio.Client, error) {
 	if ctx.Bool("debug") {
 		cl.TraceOn(os.Stderr)
 	}
+
+	cl.SetS3EnableDualstack(false)
 
 	return cl, nil
 }
