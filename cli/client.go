@@ -150,7 +150,17 @@ func getClient(ctx *cli.Context, host string) (*minio.Client, error) {
 	switch strings.ToUpper(ctx.String("signature")) {
 	case "S3V4":
 		// if Signature version '4' use NewV4 directly.
-		creds = credentials.NewStaticV4(ctx.String("access-key"), ctx.String("secret-key"), ctx.String("session-token"))
+		if os.Getenv("AWS_SHARED_CREDENTIALS_FILE") != "" {
+			creds = credentials.NewFileAWSCredentials("", "")
+		} else {
+			creds = credentials.NewChainCredentials([]credentials.Provider{
+				&credentials.IAM{
+					Client: &http.Client{
+						Transport: clientTransport(ctx),
+					},
+				},
+			})
+		}
 	case "S3V2":
 		// if Signature version '2' use NewV2 directly.
 		creds = credentials.NewStaticV2(ctx.String("access-key"), ctx.String("secret-key"), "")
@@ -171,6 +181,7 @@ func getClient(ctx *cli.Context, host string) (*minio.Client, error) {
 		CustomMD5:    md5simd.NewServer().NewHash,
 		Transport:    clientTransport(ctx),
 	})
+
 	if err != nil {
 		return nil, err
 	}
